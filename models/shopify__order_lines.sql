@@ -109,7 +109,7 @@ with order_lines as (
             joined.*,
             coalesce(da.order_line_discount_amount, 0) as order_line_discount_amount
         from joined 
-        left join discount_rollup da on ol.order_line_id = da.order_line_id
+        left join discount_rollup da on joined.order_line_id = da.order_line_id
     )
 
 select *
