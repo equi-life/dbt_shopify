@@ -155,7 +155,7 @@ with orders as (
         *,
         row_number() over (
             partition by {{ shopify.shopify_partition_by_cols('customer_id', 'source_relation') }}
-            order by created_timestamp) 
+            order by created_timestamp, order_id) 
             as customer_order_seq_number
     from (select order_id, customer_id, source_relation, created_timestamp from joined where is_canceled = FALSE)
     --rank only orders that arent canceled
