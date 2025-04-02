@@ -3,6 +3,7 @@ with orders as (
     select 
         *,
         {{ dbt_utils.generate_surrogate_key(['source_relation', 'order_id']) }} as orders_unique_key
+        , if(cancel_reason IS NULL,FALSE,TRUE) as is_canceled --EL Custom
     from {{ var('shopify_order') }}
  
 ), order_lines as (
@@ -116,7 +117,13 @@ with orders as (
         fulfillments.number_of_fulfillments,
         fulfillments.fulfillment_services,
         fulfillments.tracking_companies,
-        fulfillments.tracking_numbers
+        fulfillments.tracking_numbers,
+        -- EL Custom.  Pulls shipping amount and amount with discount from existing columns in upstream models.  
+        -- Instead of pulling the shipping discount from the discount_code (which misses some discounts), 
+        -- it pulls the information from the shipping_lines. Use these insted of shipping_discount_amount. 
+        coalesce(order_lines.order_total_shipping, 0) as order_total_shipping,
+        coalesce(order_lines.order_total_shipping_with_discounts, 0) as order_total_shipping_with_discounts,
+        coalesce(order_lines.order_total_shipping, 0) - coalesce(order_lines.order_total_shipping_with_discounts, 0) as order_total_shipping_discount
 
 
     from orders
@@ -150,19 +157,43 @@ with orders as (
             partition by {{ shopify.shopify_partition_by_cols('customer_id', 'source_relation') }}
             order by created_timestamp) 
             as customer_order_seq_number
+    from (select order_id, customer_id, source_relation, created_timestamp from joined where is_canceled = FALSE)
+    --rank only orders that arent canceled
+
+), windows_join as (
+    select 
+        joined.*, 
+        coalesce(windows.customer_order_seq_number, 0) as customer_order_seq_number
     from joined
+    left join windows using (order_id)
 
 ), new_vs_repeat as (
 
     select 
         *,
         case 
+            when customer_order_seq_number = 0 then 'canceled'
             when customer_order_seq_number = 1 then 'new'
             else 'repeat'
         end as new_vs_repeat
-    from windows
+    from windows_join
+
+),
+discount_application as (
+    select *
+    from {{ ref('stg_shopify_el__discount_application') }}
+),
+discount_application_agg as (
+    select
+        order_id,
+        round(sum(case when (target_type = 'shipping_line' and value_type = 'fixed_amount') then discount_value else 0 end), 2) as shipping_discount_fixed_amount,
+        -- round(sum(case when (target_type = 'line_item' and value_type = 'fixed_amount') then discount_value else 0 end), 2) as line_item_discount_fixed_amount
+    from discount_application
+    group by 1
 
 )
 
 select *
 from new_vs_repeat
+left join discount_application_agg
+using (order_id)

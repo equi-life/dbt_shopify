@@ -58,7 +58,9 @@ with customers as (
         coalesce(orders.lifetime_total_shipping_with_discounts, 0) as lifetime_total_shipping_with_discounts,
         orders.avg_shipping_with_discounts_per_order,
         coalesce(orders.lifetime_total_shipping_tax, 0) as lifetime_total_shipping_tax,
-        orders.avg_shipping_tax_per_order
+        orders.avg_shipping_tax_per_order,
+        orders.first_order_id,
+        orders.most_recent_order_id
 
     from customers
     left join orders

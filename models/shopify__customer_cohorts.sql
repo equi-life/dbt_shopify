@@ -18,6 +18,7 @@ with calendar as (
     select *
     from {{ ref('shopify__calendar') }}
     where cast({{ dbt.date_trunc('month','date_day') }} as date) = date_day
+    AND date_day < date_trunc(current_date(), MONTH) --bf couldnt get this to function using the dbt.date_trunc...
 
     {% if is_incremental() %}
     and cast(date_day as date) >= {{ shopify.shopify_lookback(from_date="max(date_month)", interval=1, datepart='month') }}
@@ -32,6 +33,7 @@ with calendar as (
 
     select *
     from {{ ref('shopify__orders') }}
+    where is_canceled = FALSE --BF filter out canceled orders
 
 ), customer_calendar as (
 
@@ -54,7 +56,8 @@ with calendar as (
         customer_calendar.cohort_month,
         customer_calendar.source_relation,
         coalesce(count(distinct orders.order_id), 0) as order_count_in_month,
-        coalesce(sum(orders.order_adjusted_total), 0) as total_price_in_month,
+        --coalesce(sum(orders.order_adjusted_total), 0) as total_price_in_month,
+        coalesce(sum(orders.subtotal_price), 0) as total_price_in_month,
         coalesce(sum(orders.line_item_count), 0) as line_item_count_in_month
     from customer_calendar
     left join orders

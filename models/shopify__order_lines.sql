@@ -95,7 +95,22 @@ with order_lines as (
         and tax_lines_aggregated.source_relation = order_lines.source_relation
 
 
-)
+),
+    -- Custom code to extract the discount amount from the discount_allocation table
+    -- instead of using the model defaults.  This captures order level and item level
+    -- discounts
+    discount_rollup as (
+        select order_line_id, round(sum(amount), 2) order_line_discount_amount
+        from {{ ref("stg_shopify_el__discount_allocation") }}
+        group by 1
+    ),
+    joined as (
+        select
+            ol.*,
+            coalesce(da.order_line_discount_amount, 0) as order_line_discount_amount
+        from package_ol ol
+        left join discount_rollup da on ol.order_line_id = da.order_line_id
+    )
 
 select *
 from joined
