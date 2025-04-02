@@ -104,13 +104,13 @@ with order_lines as (
         from {{ ref("stg_shopify_el__discount_allocation") }}
         group by 1
     ),
-    joined as (
+    discount_joined as (
         select
-            ol.*,
+            joined.*,
             coalesce(da.order_line_discount_amount, 0) as order_line_discount_amount
-        from package_ol ol
+        from joined 
         left join discount_rollup da on ol.order_line_id = da.order_line_id
     )
 
 select *
-from joined
+from discount_joined
