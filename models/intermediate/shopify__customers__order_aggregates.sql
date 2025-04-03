@@ -3,6 +3,7 @@ with orders as (
     select *
     from {{ var('shopify_order') }}
     where customer_id is not null
+    and cancel_reason is null --BF Mod: Dont want canceled orders to count in customer totals    
 
 ), order_aggregates as (
 
@@ -36,8 +37,10 @@ with orders as (
         orders.source_relation,
         min(orders.created_timestamp) as first_order_timestamp,
         max(orders.created_timestamp) as most_recent_order_timestamp,
-        avg(transaction_aggregates.currency_exchange_calculated_amount) as avg_order_value,
-        sum(transaction_aggregates.currency_exchange_calculated_amount) as lifetime_total_spent,
+        --avg(transaction_aggregates.currency_exchange_calculated_amount) as avg_order_value,
+        avg(orders.subtotal_price) as avg_order_value,
+        --sum(transaction_aggregates.currency_exchange_calculated_amount) as lifetime_total_spent,
+        sum(orders.subtotal_price) as lifetime_total_spent,
         sum(refunds.currency_exchange_calculated_amount) as lifetime_total_refunded,
         count(distinct orders.order_id) as lifetime_count_orders,
         avg(order_aggregates.order_total_quantity) as avg_quantity_per_order,
@@ -50,7 +53,10 @@ with orders as (
         sum(order_aggregates.order_total_shipping_with_discounts) as lifetime_total_shipping_with_discounts,
         avg(order_aggregates.order_total_shipping_with_discounts) as avg_shipping_with_discounts_per_order,
         sum(order_aggregates.order_total_shipping_tax) as lifetime_total_shipping_tax,
-        avg(order_aggregates.order_total_shipping_tax) as avg_shipping_tax_per_order
+        avg(order_aggregates.order_total_shipping_tax) as avg_shipping_tax_per_order,
+        --fields not in Package model
+        min(orders.order_id) as first_order_id,
+        max(orders.order_id) as most_recent_order_id
 
     from orders
     left join transaction_aggregates 
