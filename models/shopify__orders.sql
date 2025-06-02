@@ -186,7 +186,7 @@ discount_application as (
 discount_application_agg as (
     select
         order_id,
-        round(sum(case when (target_type = 'shipping_line' and value_type = 'fixed_amount') then discount_value else 0 end), 2) as shipping_discount_fixed_amount,
+        round(sum(case when (target_type = 'shipping_line' and value_type = 'fixed_amount') then value else 0 end), 2) as shipping_discount_fixed_amount,
         -- round(sum(case when (target_type = 'line_item' and value_type = 'fixed_amount') then discount_value else 0 end), 2) as line_item_discount_fixed_amount
     from discount_application
     group by 1
