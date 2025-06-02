@@ -181,7 +181,7 @@ with orders as (
 ),
 discount_application as (
     select *
-    from {{ var('shopify_order_discount_application') }}
+    from {{ var('shopify_discount_application') }}
 ),
 discount_application_agg as (
     select
