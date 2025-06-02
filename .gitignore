@@ -6,3 +6,6 @@ env/
 dbt_packages/
 .DS_Store
 package-lock.yml
+.venv
+.cursor
+
