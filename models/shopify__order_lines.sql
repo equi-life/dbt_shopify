@@ -118,7 +118,7 @@ refunds_aggregated as (
     -- discounts
     discount_rollup as (
         select order_line_id, round(sum(amount), 2) order_line_discount_amount
-        from {{ ref("stg_shopify_el__discount_allocation") }}
+        from {{ var('shopify_discount_allocation') }}
         group by 1
     ),
     discount_joined as (
