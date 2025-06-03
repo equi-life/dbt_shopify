@@ -66,9 +66,3 @@ models:
             - product_id
             - source_relation
 
-  - name: int_shopify__discount_code_enriched
-    tests:
-      - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - code
-            - source_relation
