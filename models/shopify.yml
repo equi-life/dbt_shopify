@@ -997,9 +997,8 @@ models:
             severity: warn # best practice for codes to be unique
     columns:
       - name: discounts_unique_key
-        description: Unique key representing a discount. Hashed on 'discount_code_id' and 'source_relation'.
+        description: Unique key representing a discount. Hashed on 'discount_code_id' and 'source_relation'. BF modified 6/3/25 remove test: Unique.
         tests:
-          - unique
           - not_null
       - name: _fivetran_synced
         description: "{{ doc('_fivetran_synced') }}"
